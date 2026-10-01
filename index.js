@@ -1,38 +1,72 @@
-const express = require('express');
-const cors = require('cors');
 const TelegramBot = require('node-telegram-bot-api');
 
-const token = '8691570304:AAHjs5-CmOVVmCp4LCyyzitdmCQydzVBd-Q'; // Bot tokeningiz
-const adminId = '1947310106'; // O'zingizning Telegram ID raqamingiz
-
+// Botingiz tokenini shu yerga yozing
+const token = '8691570304:AAFglsfmIFlKezcDuIXNWjSM1QunNStmVbk';
 const bot = new TelegramBot(token, { polling: true });
-const app = express();
 
-app.use(express.json());
-app.use(cors());
+// Foydalanuvchi holatlarini saqlash uchun
+const userStates = {};
 
-// Veb-saytdan keladigan ariza endpointi
-app.post('/send-application', async (req, res) => {
-    try {
-        const { name, phone, course, payment, comment } = req.body;
+bot.onText(/\/start/, (msg) => {
+    const chatId = msg.chat.id;
+    bot.sendMessage(chatId, `🚀 *EduKontrol Academy* botiga xush kelibsiz!\n\nRo'yxatdan o'tish uchun F.I.O (Ism va Familiyangizni) kiriting:`, { parse_mode: 'Markdown' });
+    userStates[chatId] = { step: 'waiting_name' };
+});
 
-        const message = `🚀 <b>Yangi ariza keldi! (EduKontrol)</b>\n\n` +
-                        `👤 <b>F.I.O:</b> ${name}\n` +
-                        `📞 <b>Telefon:</b> ${phone}\n` +
-                        `📚 <b>Kurs:</b> ${course}\n` +
-                        `💳 <b>To'lov turi:</b> ${payment}\n` +
-                        `💬 <b>Izoh:</b> ${comment}`;
+bot.on('message', (msg) => {
+    const chatId = msg.chat.id;
+    const text = msg.text;
 
-        // Arizani Telegram bot orqali sizga yuborish
-        await bot.sendMessage(adminId, message, { parse_mode: 'HTML' });
+    if (!userStates[chatId] || text.startsWith('/')) return;
 
-        res.json({ success: true, message: "Ariza botga yuborildi!" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Xatolik yuz berdi" });
+    const state = userStates[chatId];
+
+    if (state.step === 'waiting_name') {
+        state.name = text;
+        state.step = 'waiting_phone';
+        bot.sendMessage(chatId, `Rahmat, ${state.name}!\nEndi telefon raqamingizni yuboring (masalan: +998 90 123 45 67):`);
+    } 
+    else if (state.step === 'waiting_phone') {
+        state.phone = text;
+        state.step = 'waiting_course';
+        
+        // Kurslarni tanlash uchun tugmalar
+        const opts = {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '💻 Frontend Dasturlash (React/JS)', callback_data: 'Frontend Dasturlash' }],
+                    [{ text: '⚙️ Backend & Bot (Node.js)', callback_data: 'Backend & Bot' }],
+                    [{ text: '🚀 Full-Stack Master Klass', callback_data: 'Full-Stack' }]
+                ]
+            }
+        };
+        bot.sendMessage(chatId, `Ta'lim yo'nalishini tanlang:`, opts);
     }
 });
 
-app.listen(3000, () => {
-    console.log('Server 3000-portda ishlamqda...');
+bot.on('callback_query', (query) => {
+    const chatId = query.message.chat.id;
+    const course = query.data;
+    const state = userStates[chatId];
+
+    if (state && state.step === 'waiting_course') {
+        state.course = course;
+
+        // Arizani saqlash yoki bazaga yuborish amallarini shu yerda bajarasiz
+        console.log("Yangi ariza:", state);
+
+        const websiteUrl = 'https://sizning-sayt-manzilingiz.uz'; // Saytingiz manzili
+
+        const opts = {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '💰 Kurslar Narxlari bilan Tanishish', url: websiteUrl }]
+                ]
+            }
+        };
+
+        bot.sendMessage(chatId, `✅ *Tabriklayman, ${state.name}!* \n\nArizangiz qabul qilindi. Tez orada siz bilan bog'lanamiz.\n\nKurslarning narxlari va batafsil ma'lumot bilan quyidagi tugma orqali tanishishingiz mumkin:`, { parse_mode: 'Markdown', ...opts });
+        
+        delete userStates[chatId];
+    }
 });
