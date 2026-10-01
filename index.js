@@ -4,7 +4,7 @@ const path = require('path');
 const cors = require('cors'); // CORS ni ulash muhim
 
 // --- TOKEN VA ADMIN CHAT IDINGIZNI SHU YERGA YOZING ---
-const TOKEN = '8691570304:AAH9SXZDtXQAXG-zJWtdbkKfUZkRm_5aWSg'; 
+const TOKEN = '8691570304:AAHjs5-CmOVVmCp4LCyyzitdmCQydzVBd-Q'; 
 const ADMIN_CHAT_ID = '1947310106'; 
 // -----------------------------------------------------
 
