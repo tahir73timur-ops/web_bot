@@ -1,46 +1,38 @@
-const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
-const path = require('path');
-const cors = require('cors'); // CORS ni ulash muhim
+const cors = require('cors');
+const TelegramBot = require('node-telegram-bot-api');
 
-// --- TOKEN VA ADMIN CHAT IDINGIZNI SHU YERGA YOZING ---
-const TOKEN = '8691570304:AAHjs5-CmOVVmCp4LCyyzitdmCQydzVBd-Q'; 
-const ADMIN_CHAT_ID = '1947310106'; 
-// -----------------------------------------------------
+const token = '8691570304:AAHjs5-CmOVVmCp4LCyyzitdmCQydzVBd-Q'; // Bot tokeningiz
+const adminId = '1947310106'; // O'zingizning Telegram ID raqamingiz
 
-const bot = new TelegramBot(TOKEN, { polling: true });
+const bot = new TelegramBot(token, { polling: true });
 const app = express();
 
-app.use(cors()); // Veb-saytdan kelgan so'rovlarni ochiq qabul qilish uchun
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
+app.use(cors());
 
-// Saytdan kelgan arizalarni qabul qilib Telegramga yuborish
+// Veb-saytdan keladigan ariza endpointi
 app.post('/send-application', async (req, res) => {
-    const { name, phone, course, payment, comment } = req.body;
-
-    const message = `🚀 <b>Yangi Startap Arizasi Keldi!</b>\n\n` +
-                    `👤 <b>F.I.O:</b> ${name}\n` +
-                    `📞 <b>Telefon:</b> ${phone}\n` +
-                    `📚 <b>Yo'nalish:</b> ${course}\n` +
-                    `💳 <b>To'lov turi:</b> ${payment}\n` +
-                    `💬 <b>Izoh:</b> ${comment}`;
-
     try {
-        await bot.sendMessage(ADMIN_CHAT_ID, message, { parse_mode: 'HTML' });
-        res.json({ success: true });
+        const { name, phone, course, payment, comment } = req.body;
+
+        const message = `🚀 <b>Yangi ariza keldi! (EduKontrol)</b>\n\n` +
+                        `👤 <b>F.I.O:</b> ${name}\n` +
+                        `📞 <b>Telefon:</b> ${phone}\n` +
+                        `📚 <b>Kurs:</b> ${course}\n` +
+                        `💳 <b>To'lov turi:</b> ${payment}\n` +
+                        `💬 <b>Izoh:</b> ${comment}`;
+
+        // Arizani Telegram bot orqali sizga yuborish
+        await bot.sendMessage(adminId, message, { parse_mode: 'HTML' });
+
+        res.json({ success: true, message: "Ariza botga yuborildi!" });
     } catch (error) {
-        console.error("Telegramga yuborishda xatolik:", error);
-        res.json({ success: false });
+        console.error(error);
+        res.status(500).json({ success: false, message: "Xatolik yuz berdi" });
     }
 });
 
-bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-    bot.sendMessage(chatId, "Salom! EduKontrol platformasi faol va arizalarni qabul qilishga tayyor.");
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server ${PORT}-portda muvaffaqiyatli ishga tushdi!`);
+app.listen(3000, () => {
+    console.log('Server 3000-portda ishlamqda...');
 });
