@@ -55,7 +55,7 @@ bot.on('callback_query', (query) => {
         // Arizani saqlash yoki bazaga yuborish amallarini shu yerda bajarasiz
         console.log("Yangi ariza:", state);
 
-        const websiteUrl = 'https://sizning-sayt-manzilingiz.uz'; // Saytingiz manzili
+        const websiteUrl = 'https://diyorbekweb015.netlify.app/'; // Saytingiz manzili
 
         const opts = {
             reply_markup: {
