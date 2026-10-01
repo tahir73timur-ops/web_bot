@@ -1,10 +1,8 @@
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
-// Agar saytdagi HTML ni parse qilmoqchi bo'lsangiz cheerio ham ishlatish mumkin:
-// const cheerio = require('cheerio');
 
 // Bot tokeningizni shu yerga yozing
-const token = 'Y8691570304:AAFOBUDpSZE49zfSO7P0rH_IDiKFRbvi1tc';
+const token = '8691570304:AAFOBUDpSZE49zfSO7P0rH_IDiKFRbvi1tc';
 const bot = new TelegramBot(token, { polling: true });
 
 // Sayt manzili
@@ -41,19 +39,6 @@ bot.on('callback_query', async (query) => {
     }
     
     bot.answerCallbackQuery(query.id);
-});
-
-// Agar saytdan ma'lumotni dinamik ravishda tortib olmoqchi bo'lsangiz (Scraping):
-bot.onText(/\/websayt/, async (msg) => {
-    const chatId = msg.chat.id;
-    try {
-        const response = await axios.get(WEBSITE_URL);
-        if (response.status === 200) {
-            bot.sendMessage(chatId, `✅ Sayt (${WEBSITE_URL}) muvaffaqiyatli ishlayapti va ma'lumotlar joyida!`);
-        }
-    } catch (error) {
-        bot.sendMessage(chatId, `❌ Hozirda saytga ulanishda xatolik yuz berdi.`);
-    }
 });
 
 console.log('Bot ishga tushdi...');
