@@ -1,72 +1,59 @@
 const TelegramBot = require('node-telegram-bot-api');
+const axios = require('axios');
+// Agar saytdagi HTML ni parse qilmoqchi bo'lsangiz cheerio ham ishlatish mumkin:
+// const cheerio = require('cheerio');
 
-// Botingiz tokenini shu yerga yozing
-const token = '8691570304:AAFglsfmIFlKezcDuIXNWjSM1QunNStmVbk';
+// Bot tokeningizni shu yerga yozing
+const token = 'Y8691570304:AAFOBUDpSZE49zfSO7P0rH_IDiKFRbvi1tc';
 const bot = new TelegramBot(token, { polling: true });
 
-// Foydalanuvchi holatlarini saqlash uchun
-const userStates = {};
+// Sayt manzili
+const WEBSITE_URL = 'https://diyorbekweb015.netlify.app/';
 
+// Start komandasi
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    bot.sendMessage(chatId, `🚀 *EduKontrol Academy* botiga xush kelibsiz!\n\nRo'yxatdan o'tish uchun F.I.O (Ism va Familiyangizni) kiriting:`, { parse_mode: 'Markdown' });
-    userStates[chatId] = { step: 'waiting_name' };
+    bot.sendMessage(chatId, `Assalomu alaykum! EduKontrol Academy (Pop tumani filiali) botiga xush kelibsiz.\n\nSaytimiz: ${WEBSITE_URL}\n\nQuyidagi tugmalar orqali ma'lumot olishingiz mumkin:`, {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: '💰 Narxlar va Kurslar', callback_data: 'prices' }],
+                [{ text: '📍 Manzil va Aloqa', callback_data: 'contact' }],
+                [{ text: '🌐 Saytga o\'tish', url: WEBSITE_URL }]
+            ]
+        }
+    });
 });
 
-bot.on('message', (msg) => {
-    const chatId = msg.chat.id;
-    const text = msg.text;
-
-    if (!userStates[chatId] || text.startsWith('/')) return;
-
-    const state = userStates[chatId];
-
-    if (state.step === 'waiting_name') {
-        state.name = text;
-        state.step = 'waiting_phone';
-        bot.sendMessage(chatId, `Rahmat, ${state.name}!\nEndi telefon raqamingizni yuboring (masalan: +998 90 123 45 67):`);
-    } 
-    else if (state.step === 'waiting_phone') {
-        state.phone = text;
-        state.step = 'waiting_course';
-        
-        // Kurslarni tanlash uchun tugmalar
-        const opts = {
-            reply_markup: {
-                inline_keyboard: [
-                    [{ text: '💻 Frontend Dasturlash (React/JS)', callback_data: 'Frontend Dasturlash' }],
-                    [{ text: '⚙️ Backend & Bot (Node.js)', callback_data: 'Backend & Bot' }],
-                    [{ text: '🚀 Full-Stack Master Klass', callback_data: 'Full-Stack' }]
-                ]
-            }
-        };
-        bot.sendMessage(chatId, `Ta'lim yo'nalishini tanlang:`, opts);
-    }
-});
-
-bot.on('callback_query', (query) => {
+// Inline tugmalar bosilganda
+bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
-    const course = query.data;
-    const state = userStates[chatId];
-
-    if (state && state.step === 'waiting_course') {
-        state.course = course;
-
-        // Arizani saqlash yoki bazaga yuborish amallarini shu yerda bajarasiz
-        console.log("Yangi ariza:", state);
-
-        const websiteUrl = 'https://diyorbekweb015.netlify.app/'; // Saytingiz manzili
-
-        const opts = {
-            reply_markup: {
-                inline_keyboard: [
-                    [{ text: '💰 Kurslar Narxlari bilan Tanishish', url: websiteUrl }]
-                ]
-            }
-        };
-
-        bot.sendMessage(chatId, `✅ *Tabriklayman, ${state.name}!* \n\nArizangiz qabul qilindi. Tez orada siz bilan bog'lanamiz.\n\nKurslarning narxlari va batafsil ma'lumot bilan quyidagi tugma orqali tanishishingiz mumkin:`, { parse_mode: 'Markdown', ...opts });
+    
+    if (query.data === 'prices') {
+        const text = `📚 *EduKontrol Academy kurslari va narxlari* (Pop tumani):\n\n` +
+                     `1️⃣ *HTML & CSS Asoslari*\n- Narxi: 350,000 so'm / oyiga\n\n` +
+                     `2️⃣ *Frontend Kursi (HTML, CSS, JS)*\n- Narxi: 500,000 so'm / oyiga\n\n` +
+                     `3️⃣ *Full-Stack Master (PRO)*\n- Narxi: 750,000 so'm / oyiga\n\n` +
+                     `Batafsil saytimizdan ko'rishingiz mumkin: ${WEBSITE_URL}`;
         
-        delete userStates[chatId];
+        bot.sendMessage(chatId, text, { parse_mode: 'Markdown' });
+    } else if (query.data === 'contact') {
+        bot.sendMessage(chatId, `📍 *Manzil:* Namangan viloyati, Pop tumani\n📞 *Telefon:* +998 90 123 45 67\n🌐 *Web sayt:* ${WEBSITE_URL}`, { parse_mode: 'Markdown' });
+    }
+    
+    bot.answerCallbackQuery(query.id);
+});
+
+// Agar saytdan ma'lumotni dinamik ravishda tortib olmoqchi bo'lsangiz (Scraping):
+bot.onText(/\/websayt/, async (msg) => {
+    const chatId = msg.chat.id;
+    try {
+        const response = await axios.get(WEBSITE_URL);
+        if (response.status === 200) {
+            bot.sendMessage(chatId, `✅ Sayt (${WEBSITE_URL}) muvaffaqiyatli ishlayapti va ma'lumotlar joyida!`);
+        }
+    } catch (error) {
+        bot.sendMessage(chatId, `❌ Hozirda saytga ulanishda xatolik yuz berdi.`);
     }
 });
+
+console.log('Bot ishga tushdi...');
